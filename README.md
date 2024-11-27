@@ -1,5 +1,7 @@
 # BTP Semester Plan
 
+Note: This is a tentative plan of the project. However, you can find the actual work progress [here](./progress.md).
+
 ## Project Title
 Analyzing 5G Network Performance in Mobility
 
