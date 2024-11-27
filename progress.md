@@ -59,5 +59,80 @@ Running QCSuper directly was ofcourse not working on this dongle as well. Also, 
   ```
   This command configures the modem for connecting to a mobile network and registers the connection within NetworkManager.
 
-Now that we have the USB serial port detected, we can communicate with the dongle using AT commands to start collecting measurements.
+Now that we have the USB serial port detected, we can communicate with the dongle using [AT commands](./AT_commands.md) to start collecting measurements.
 
+### Taking Measurements in Mobility
+
+In the static scenario, we successfully collected data by running the provided [run script](scripts/run) and analyzed it using the [plot script](scripts/plot). However, during the mobility scenario, we encountered a logistical constraint. While powering the Raspberry Pi 4 Model B using a power bank with a 5V/3A output (as per its specific requirements), we faced the challenge of not carrying any input devices, such as a keyboard or mouse, to manually intervene if the Pi disconnected or encountered issues. For example, in the event of accidental physical disturbance, it was impractical to restart the data collection script manually.  
+
+To address this limitation, we implemented a solution to automatically execute the script on every system reboot, ensuring uninterrupted data collection in all scenarios. This was achieved by configuring a **systemd service** on the Raspberry Pi. Below are the steps we followed:
+
+
+#### Automating Script Execution with systemd
+
+1. **Create a systemd Service File**  
+   We created a service file named `myscript.service` to configure the automatic execution of the data collection script on boot.  
+
+   ```bash
+   sudo vim /etc/systemd/system/myscript.service
+   ```
+
+   **Content of `myscript.service`:**  
+
+   ```ini
+   [Unit]
+   Description=Collect data on boot
+   After=multi-user.target
+
+   [Service]
+   ExecStart=/home/raspi/startup.sh
+   Type=simple
+   Restart=no
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   - **[Unit]:** Specifies metadata and dependencies for the service.  
+     - `Description`: A brief description of the service.  
+     - `After`: Ensures the service starts after the system has reached the multi-user state.  
+   - **[Service]:** Configures how the service will run.  
+     - `ExecStart`: The script to execute during startup (`startup.sh` is just the script to run netrics and at_script together).  
+     - `Type`: Defines the process type; `simple` indicates the script runs as a straightforward process.  
+     - `Restart`: Specifies no automatic restart for the service if it stops.  
+   - **[Install]:** Configures when the service should be activated.  
+     - `WantedBy`: Links the service to the multi-user target, ensuring it runs during the system's operational state.  
+
+2. **Reload systemd Daemon**  
+   After creating the service file, we reloaded the systemd daemon to register the new service:  
+
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+3. **Enable the Service**  
+   We enabled the service to ensure it runs automatically on every boot:  
+
+   ```bash
+   sudo systemctl enable myscript.service
+   ```
+
+4. **Start the Service**  
+   To start the service immediately without rebooting:  
+
+   ```bash
+   sudo systemctl start myscript.service
+   ```
+
+5. **Verify the Service Status**  
+   To confirm the service is active and running:  
+
+   ```bash
+   sudo systemctl status myscript.service
+   ```
+
+---
+
+This configuration allowed the Raspberry Pi to execute the data collection script automatically after every reboot, eliminating the need for manual intervention in case of unexpected disconnections. This approach was particularly useful for mobility and crowded scenarios, ensuring consistent data collection even in dynamic or unpredictable environments.
+
+This comes to an end of our project now look at the `report.pdf` to find the findings and conclusion of the project. Thank You!
